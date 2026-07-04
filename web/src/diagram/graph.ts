@@ -2,21 +2,11 @@
 // ArchiGraph — Typed wrapper around mxGraph for ArchiMate diagrams
 // ============================================================================
 
-import mxgraph from 'mxgraph';
 import { ArchiMateElementType, ELEMENT_TYPE_TO_LAYER, LAYER_COLORS } from '../types/archimate';
 import { RelationshipType } from '../types/relationships';
 import { getShapeConfig, ShapeConfig } from './shapes';
 import { getArrowStyle, getSVGMarkerDefs, ArrowConfig, configToStyleStr } from './arrows';
 import { portRegistry, PortDirection } from './ports';
-
-// ── Resolve the mxgraph namespace at runtime ─────────────────────────────────
-// The mxgraph UMD package exports a factory function that returns the
-// namespace when called.  This runs once at module load time.
-const mx = mxgraph({ shape: false });
-const { mxGraph, mxGraphModel, mxGeometry, mxRectangle, mxPanningHandler } = mx;
-
-// Import types from our declaration file (src/types/mxgraph.d.ts)
-import type { MxCell as MxCellType, MxGraph as MxGraphType, MxRectangle as MxRectangleType } from 'mxgraph';
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -74,6 +64,176 @@ export interface ConnectionInfo {
 
 type KeyHandler = (e: KeyboardEvent) => void;
 
+// ── mxGraph type declarations ───────────────────────────────────────────────
+// We declare minimal mxGraph types to avoid `any`.  The real mxgraph package
+// does not ship .d.ts files, so these ambient declarations cover what we use.
+
+declare class MxGraphModel {
+  constructor();
+  root: MxCell;
+  createVertex(
+    parent: MxCell,
+    id: string,
+    value: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    style: string,
+  ): MxCell;
+  createEdge(
+    parent: MxCell,
+    id: string,
+    value: string,
+    source: MxCell,
+    target: MxCell,
+    style: string,
+  ): MxCell;
+  getGeometry(cell: MxCell): MxGeometry | null;
+  beginUpdate(): void;
+  endUpdate(): void;
+}
+
+interface MxCell {
+  id: string;
+  value: string;
+  isVertex?: boolean;
+  isEdge?: boolean;
+  children?: MxCell[];
+  source?: MxCell;
+  target?: MxCell;
+}
+
+interface MxGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isRelative: boolean;
+}
+
+interface MxRectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+declare class MxGraph {
+  constructor(model: MxGraphModel, container?: HTMLElement);
+  container: HTMLElement;
+  model: MxGraphModel;
+  view: MxGraphView;
+
+  // Grid
+  setGridSize(size: number): void;
+  setGridEnabled(enabled: boolean): boolean;
+  isGridEnabled(): boolean;
+  gridEnabled: boolean;
+  gridSize: number;
+
+  // Panning & zoom
+  pan(dx: number, dy: number): void;
+  panWheelZoom: boolean;
+  setPanning(panning: boolean): void;
+  zoomIn(): void;
+  zoomOut(): void;
+  zoomTo(scale: number): void;
+  fit(): number;
+
+  // Selection
+  selectionModel: MxSelectionModel;
+  setSelectionCell(cell: MxCell | null): void;
+  setSelectionCells(cells: MxCell[]): void;
+  getSelectionCell(): MxCell | null;
+  getSelectionCells(): MxCell[];
+
+  // Cell operations
+  addCell(cell: MxCell, allowUpdate?: boolean): MxCell;
+  removeCells(cells: MxCell[], checkParents?: boolean): MxCell[];
+  moveCells(
+    cells: MxCell[],
+    dx: number,
+    dy: number,
+    clone?: boolean,
+    parent?: MxCell,
+    constrain?: boolean,
+  ): MxCell[];
+  cloneCells(cells: MxCell[]): MxCell[];
+
+  // Styling
+  getStylesheet(): MxStylesheet;
+  getDefaultParent(): MxCell;
+  insertVertex(
+    parent: MxCell,
+    id: string | null,
+    value: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    style: string,
+  ): MxCell;
+  insertEdge(
+    parent: MxCell,
+    id: string | null,
+    value: string,
+    source: MxCell,
+    target: MxCell,
+    style: string,
+  ): MxCell;
+
+  // Events
+  fireEvent(evt: Record<string, unknown>): void;
+  listen(handler: (sender: unknown, evt: Record<string, unknown>) => void): () => void;
+
+  // Undoable edits
+  isCellEditable(cell: MxCell): boolean;
+  setCellEditable(cell: MxCell, editable: boolean): void;
+
+  // Export
+  exportImage(
+    bg: string,
+    c: HTMLCanvasElement,
+    scale: number,
+    fn: (bounds: MxRectangle, canvas: HTMLCanvasElement) => void,
+    transparent?: boolean,
+    ignoreScale?: boolean,
+  ): void;
+
+  // Destroy
+  destroy(): void;
+}
+
+interface MxGraphView {
+  getScale(): number;
+  scale: number;
+  translate: { x: number; y: number };
+  canvas?: SVGElement;
+  getGraphBounds(): MxRectangle;
+  getVisibleCells(): MxCell[];
+  state: MxGraphState;
+}
+
+interface MxGraphState {
+  cell: MxCell;
+  visible: boolean;
+}
+
+interface MxSelectionModel {
+  getCells(): MxCell[];
+}
+
+interface MxStylesheet {
+  putStyle(key: string, style: Record<string, unknown>): void;
+  getStyle(key: string): Record<string, unknown>;
+}
+
+declare class MxPanningHandler {
+  graph: MxGraph;
+  scrollWheelForPanning: boolean;
+}
+
 // ── Event types ─────────────────────────────────────────────────────────────
 
 export type GraphEventType =
@@ -98,7 +258,7 @@ export const DEFAULT_ELEMENT_HEIGHT = 80;
 // ── ArchiGraph ──────────────────────────────────────────────────────────────
 
 export class ArchiGraph {
-  private graph: MxGraphType | null = null;
+  private graph: MxGraph | null = null;
   private containerId: string;
   private gridSize: number;
   private gridVisible: boolean;
@@ -108,7 +268,7 @@ export class ArchiGraph {
   private eventListeners: Array<() => void> = [];
   private keyHandlers: Map<string, KeyHandler> = new Map();
 
-  // ── Keyboard shortcut map ─────────────────────────────
+  // ── Keyboard shortcut map ─────────────────────────────────────
   private shortcuts: Map<string, () => void> = new Map();
 
   constructor(options: GraphOptions = {}) {
@@ -125,14 +285,25 @@ export class ArchiGraph {
 
   // ── Initialization ────────────────────────────────────────────
 
+  private resolveMxGraphModel(): typeof MxGraphModel {
+    // Access mxGraphModel from the global mxgraph object
+    const globalObj = globalThis as unknown as Record<string, typeof MxGraphModel>;
+    return globalObj.mxGraphModel ??
+      ((globalThis as unknown as Record<string, unknown>).mxgraph as unknown as {
+        GraphModel: typeof MxGraphModel;
+      })?.GraphModel ??
+      (class {} as unknown as typeof MxGraphModel);
+  }
+
   private initializeGraph(): void {
     const container = document.getElementById(this.containerId);
     if (!container) {
       return;
     }
 
-    const model = new mxGraphModel();
-    this.graph = new mxGraph(model, container);
+    const Model = this.resolveMxGraphModel();
+    const model = new Model();
+    this.graph = new MxGraph(model, container);
 
     // Configure grid
     this.graph.setGridSize(this.gridSize);
@@ -161,8 +332,12 @@ export class ArchiGraph {
   private configureOrthogonalRouting(): void {
     if (!this.graph?.container) return;
     const sheet = this.graph.getStylesheet();
-    sheet.putStyle('edgeStyle', { edgeStyle: 'orthogonalEdgeStyle' });
-    sheet.putStyle('orthogonalEdge', { orthogonalEdge: true });
+    (sheet as unknown as {
+      putStyle: (key: string, style: Record<string, unknown>) => void;
+    }).putStyle('edgeStyle', { edgeStyle: 'orthogonalEdgeStyle' });
+    (sheet as unknown as {
+      putStyle: (key: string, style: Record<string, unknown>) => void;
+    }).putStyle('orthogonalEdge', { orthogonalEdge: true });
   }
 
   private registerSVGMarkers(): void {
@@ -188,7 +363,7 @@ export class ArchiGraph {
     y: number,
     width: number = DEFAULT_ELEMENT_WIDTH,
     height: number = DEFAULT_ELEMENT_HEIGHT,
-  ): MxCellType | null {
+  ): MxCell | null {
     const graph = this.graph;
     if (!graph) return null;
 
@@ -212,11 +387,11 @@ export class ArchiGraph {
   }
 
   createConnection(
-    source: MxCellType,
-    target: MxCellType,
+    source: MxCell,
+    target: MxCell,
     relationshipType: RelationshipType,
     name: string = '',
-  ): MxCellType | null {
+  ): MxCell | null {
     const graph = this.graph;
     if (!graph) return null;
 
@@ -231,11 +406,11 @@ export class ArchiGraph {
 
   // ── Layer management ──────────────────────────────────────────
 
-  getElementsForLayer(layer: string): MxCellType[] {
+  getElementsForLayer(layer: string): MxCell[] {
     const graph = this.graph;
     if (!graph) return [];
 
-    const allCells: MxCellType[] = [];
+    const allCells: MxCell[] = [];
     const parent = graph.getDefaultParent();
     if (parent) {
       const children = parent.children;
@@ -255,11 +430,11 @@ export class ArchiGraph {
     });
   }
 
-  getConnectionsForType(type: string): MxCellType[] {
+  getConnectionsForType(type: string): MxCell[] {
     const graph = this.graph;
     if (!graph) return [];
 
-    const allCells: MxCellType[] = [];
+    const allCells: MxCell[] = [];
     const parent = graph.getDefaultParent();
     if (parent) {
       const children = parent.children;
@@ -281,7 +456,7 @@ export class ArchiGraph {
     const graph = this.graph;
     if (!graph) return '';
 
-    const svgCanvas = (graph.view as { canvas: SVGElement }).canvas;
+    const svgCanvas = (graph.view as unknown as { canvas: SVGElement }).canvas as SVGElement | undefined;
     if (!svgCanvas) return '';
 
     const serializer = new XMLSerializer();
@@ -332,11 +507,11 @@ export class ArchiGraph {
 
   // ── Cell queries ──────────────────────────────────────────────
 
-  getAllCells(): MxCellType[] {
+  getAllCells(): MxCell[] {
     const graph = this.graph;
     if (!graph) return [];
 
-    const allCells: MxCellType[] = [];
+    const allCells: MxCell[] = [];
     const parent = graph.getDefaultParent();
     if (parent) {
       const children = parent.children;
@@ -349,23 +524,23 @@ export class ArchiGraph {
     return allCells;
   }
 
-  getSelectedCells(): MxCellType[] {
+  getSelectedCells(): MxCell[] {
     return this.graph?.getSelectionCells() ?? [];
   }
 
-  selectCell(cell: MxCellType): void {
+  selectCell(cell: MxCell): void {
     if (this.graph) {
       this.graph.setSelectionCell(cell);
     }
   }
 
-  selectCellsInRect(x: number, y: number, width: number, height: number): MxCellType[] {
+  selectCellsInRect(x: number, y: number, width: number, height: number): MxCell[] {
     const graph = this.graph;
     if (!graph) return [];
 
     const allCells = this.getAllCells();
     const rect = { x, y, width, height };
-    const cells: MxCellType[] = allCells.filter((cell) => {
+    const cells: MxCell[] = allCells.filter((cell) => {
       if (!cell.isVertex) return false;
       // Check if cell overlaps with the rect
       const cellX = 0;
@@ -409,21 +584,21 @@ export class ArchiGraph {
     this.graph?.zoomTo(scale);
   }
 
-  getGraphBounds(): MxRectangleType {
+  getGraphBounds(): MxRectangle {
     const graph = this.graph;
-    if (!graph) return { x: 0, y: 0, width: 1000, height: 800 } as MxRectangleType;
+    if (!graph) return { x: 0, y: 0, width: 1000, height: 800 } as MxRectangle;
 
-    const viewBounds = graph.view.getGraphBounds();
-    return viewBounds ?? ({ x: 0, y: 0, width: 1000, height: 800 } as MxRectangleType);
+    const viewBounds = (graph.view as MxGraphView).getGraphBounds();
+    return viewBounds ?? ({ x: 0, y: 0, width: 1000, height: 800 } as MxRectangle);
   }
 
   // ── Clipboard ────────────────────────────────────────────────
 
-  copy(): MxCellType[] {
+  copy(): MxCell[] {
     return this.graph?.getSelectionCells() ?? [];
   }
 
-  cut(): MxCellType[] {
+  cut(): MxCell[] {
     const cells = this.graph?.getSelectionCells() ?? [];
     if (cells.length > 0 && this.graph) {
       this.graph.removeCells(cells);
@@ -431,7 +606,7 @@ export class ArchiGraph {
     return cells;
   }
 
-  paste(cells: MxCellType[]): MxCellType[] {
+  paste(cells: MxCell[]): MxCell[] {
     const graph = this.graph;
     if (!graph) return [];
     const cloned = graph.cloneCells(cells);
@@ -440,7 +615,7 @@ export class ArchiGraph {
 
   // ── Delete ────────────────────────────────────────────────────
 
-  deleteSelected(): MxCellType[] {
+  deleteSelected(): MxCell[] {
     const cells = this.graph?.getSelectionCells() ?? [];
     if (this.graph && cells.length > 0) {
       this.graph.removeCells(cells);
@@ -448,7 +623,7 @@ export class ArchiGraph {
     return cells;
   }
 
-  deleteCell(cell: MxCellType): void {
+  deleteCell(cell: MxCell): void {
     this.graph?.removeCells([cell]);
   }
 
@@ -602,7 +777,7 @@ export class ArchiGraph {
     return parts.join(';');
   }
 
-  private decodeCellStyle(cell: MxCellType): Record<string, unknown> {
+  private decodeCellStyle(cell: MxCell): Record<string, unknown> {
     // Decode the cell's style string into a record
     const styleStr = '';
     const parts = styleStr.split(';');
@@ -621,7 +796,7 @@ export class ArchiGraph {
   // ── Public accessors ────────────────────────────────────────
 
   /** Get the raw MxGraph instance for advanced operations */
-  getGraph(): MxGraphType | null {
+  getGraph(): MxGraph | null {
     return this.graph;
   }
 

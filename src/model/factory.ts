@@ -159,6 +159,8 @@ export class DiagramFactory {
       gridVisible: true,
       gridSnap: true,
       backgroundColor: '#FFFFFF',
+      width: options.width ?? 1920,
+      height: options.height ?? 1080,
       elements: [],
       connections: [],
       created: now,

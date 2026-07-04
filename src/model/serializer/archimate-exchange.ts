@@ -123,6 +123,8 @@ export class ArchiMateExchange {
         gridVisible: true,
         gridSnap: true,
         backgroundColor: '#FFFFFF',
+        width: 1920,
+        height: 1080,
         elements: [],
         connections: [],
         created: now,
