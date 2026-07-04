@@ -60,3 +60,4 @@ Desktop.ini
 
 # Playwright
 playwright/.cache/
+public/mxgraph.js
