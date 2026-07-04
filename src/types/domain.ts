@@ -89,6 +89,8 @@ export const DiagramSchema = z.object({
   gridVisible: z.boolean().default(true),
   gridSnap: z.boolean().default(true),
   backgroundColor: z.string().default('#FFFFFF'),
+  width: z.number().positive().default(1920),
+  height: z.number().positive().default(1080),
   elements: z.array(DiagramElementSchema).default([]),
   connections: z.array(DiagramConnectionSchema).default([]),
   created: z.string().datetime(),
