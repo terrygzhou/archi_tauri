@@ -1,0 +1,261 @@
+/* ============================================================================
+   Palette Component Styles
+   ============================================================================ */
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  min-width: 200px;
+  max-width: 320px;
+  height: 100%;
+  background: #1a1a2e;
+  border-right: 1px solid #2a2a3e;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.palette-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #2a2a3e;
+  background: #16162a;
+}
+
+.palette-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+  letter-spacing: 0.3px;
+}
+
+.palette-count-badge {
+  font-size: 10px;
+  color: #888;
+  background: #2a2a3e;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* ── Search ────────────────────────────────────────────────────────── */
+
+.palette-search {
+  position: relative;
+  padding: 8px 10px;
+  border-bottom: 1px solid #2a2a3e;
+}
+
+.palette-search-input {
+  width: 100%;
+  padding: 6px 28px 6px 8px;
+  border: 1px solid #333350;
+  border-radius: 6px;
+  background: #0d0d1a;
+  color: #e0e0e0;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.palette-search-input:focus {
+  border-color: #5555aa;
+}
+
+.palette-search-input::placeholder {
+  color: #555;
+}
+
+.palette-search-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+.palette-search-clear:hover {
+  color: #aaa;
+}
+
+/* ── Sections ─────────────────────────────────────────────────────── */
+
+.palette-sections {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+}
+
+/* Scrollbar styling */
+.palette-sections::-webkit-scrollbar {
+  width: 6px;
+}
+
+.palette-sections::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.palette-sections::-webkit-scrollbar-thumb {
+  background: #333350;
+  border-radius: 3px;
+}
+
+.palette-sections::-webkit-scrollbar-thumb:hover {
+  background: #444460;
+}
+
+/* ── Section Header ──────────────────────────────────────────────── */
+
+.palette-section {
+  border-bottom: 1px solid #1e1e32;
+}
+
+.palette-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-left: 4px solid;
+  color: #ccc;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.palette-section-header:hover {
+  background: #222240;
+}
+
+.palette-section-toggle {
+  font-size: 8px;
+  width: 12px;
+  color: #666;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.palette-section-header.collapsed .palette-section-toggle {
+  transform: rotate(-90deg);
+}
+
+.palette-section-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.palette-section-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-section-count {
+  font-size: 10px;
+  color: #555;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+/* ── Section Content ─────────────────────────────────────────────── */
+
+.palette-section-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 8px 8px 8px;
+}
+
+/* ── Palette Item ────────────────────────────────────────────────── */
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background 0.12s, transform 0.1s;
+  user-select: none;
+  min-height: 28px;
+}
+
+.palette-item:hover {
+  background: #222240;
+}
+
+.palette-item:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.palette-item:active {
+  opacity: 0.8;
+}
+
+.palette-element-icon {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.palette-item-label {
+  font-size: 11px;
+  color: #bbb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  line-height: 1.2;
+}
+
+/* ── Empty State ─────────────────────────────────────────────────── */
+
+.palette-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #555;
+  font-size: 12px;
+}
+
+.palette-empty p {
+  margin: 0;
+}
+
+/* ── Responsive / collapsed palette ──────────────────────────────── */
+
+.palette.collapsed {
+  width: 40px;
+  min-width: 40px;
+}
+
+.palette.collapsed .palette-title,
+.palette.collapsed .palette-count-badge,
+.palette.collapsed .palette-search,
+.palette.collapsed .palette-sections {
+  display: none;
+}
+
+/* ── Drag ghost ──────────────────────────────────────────────────── */
+
+.palette-item.dragging {
+  opacity: 0.4;
+}

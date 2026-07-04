@@ -1,0 +1,85 @@
+/* ============================================================================
+   Diagram Canvas Styles
+   ============================================================================ */
+
+.diagram-canvas {
+  position: relative;
+  background-color: #f8f8f8;
+  overflow: hidden;
+  cursor: default;
+}
+
+.diagram-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Diagram Element ─────────────────────────────────────────── */
+
+.diagram-element {
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.diagram-element:hover {
+  filter: drop-shadow(0 0 4px rgba(51, 102, 255, 0.4));
+}
+
+.diagram-element.selected rect {
+  stroke: #3366ff !important;
+  stroke-width: 2 !important;
+}
+
+.diagram-element.locked {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* ── Grid Overlay ──────────────────────────────────────────────── */
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Connection Indicator ─────────────────────────────────────── */
+
+.connection-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border: 2px dashed #3366ff;
+  z-index: 2;
+  animation: pulse-border 1s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    border-color: #3366ff55;
+  }
+  50% {
+    border-color: #3366ff;
+  }
+}
+
+/* ── Drag Ghost ─────────────────────────────────────────────── */
+
+.diagram-canvas.drag-over {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(51, 102, 255, 0.05) 10px,
+    rgba(51, 102, 255, 0.05) 20px
+  );
+}

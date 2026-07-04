@@ -1,0 +1,61 @@
+[package]
+name = "archi"
+version = "1.0.0"
+edition = "2021"
+authors = ["Archi Desktop Contributors"]
+license = "GPL-3.0"
+description = "Archi Desktop - Open-source ArchiMate modeling tool"
+repository = "https://github.com/archimatetool/archi"
+
+[dependencies]
+# Tauri 2
+tauri = { version = "2" }
+tauri-plugin-shell = "2"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# UUIDs
+uuid = { version = "1", features = ["serde", "v4"] }
+
+# Dates/times
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2"
+
+# OS keyring for credentials
+keytar = "0.1"
+
+# XML processing
+xml-rs = "0.8"
+roxmltree = "0.20"
+
+# Utilities
+url = "2"
+base64 = "0.22"
+log = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+once_cell = "1"
+
+# Filesystem
+dirs = "6"
+
+# SVG rendering (for diagram PNG export)
+resvg = "0.44"
+usvg = "0.44"
+tiny-skia = "0.11"
+
+[build-dependencies]
+tauri-build = "2"
