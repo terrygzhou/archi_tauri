@@ -10,7 +10,7 @@ use chrono::{DateTime, Utc};
 use super::{
     diagram::Diagram,
     element::{Element, ElementType},
-    relationship::{Relationship, RelationshipType},
+    relationship::Relationship,
 };
 
 /// A complete ArchiMate model.

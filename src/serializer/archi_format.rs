@@ -6,9 +6,6 @@
 use crate::models::model::Model;
 use crate::SerializationError;
 
-/// Version of the .archi file format.
-pub const ARCHI_FORMAT_VERSION: &str = "1.0";
-
 /// Serializer for the `.archi` file format.
 ///
 /// Provides static methods for serializing models to and from the `.archi` format.

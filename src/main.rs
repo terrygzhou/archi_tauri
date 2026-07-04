@@ -30,10 +30,8 @@ fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    // Initialize database
-    if let Err(e) = db::connection::init_db() {
-        eprintln!("Failed to initialize database: {e}");
-    }
+    // Database is initialized lazily via `once_cell::sync::Lazy`
+    // (see `db::connection::DB_POOL`) — no explicit init needed here.
 
     tauri::Builder::default()
         .setup(|_app| {

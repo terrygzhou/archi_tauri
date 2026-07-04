@@ -20,4 +20,12 @@ export default defineConfig({
     strictPort: true,
   },
   clearScreen: false,
+  optimizeDeps: {
+    // mxgraph is UMD — force pre-bundling so Vite handles it properly
+    include: ['mxgraph'],
+  },
+  define: {
+    // mxgraph UMD expects these globals in browser context
+    global: 'globalThis',
+  },
 });

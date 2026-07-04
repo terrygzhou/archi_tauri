@@ -1,5 +1,4 @@
-use serde::{Deserialize, Serialize};
-use std::fmt;
+use serde::Serialize;
 
 /// Top-level error type for the Archi application.
 /// All internal error types convert to this, and Tauri commands return `Result<T, AppError>`.

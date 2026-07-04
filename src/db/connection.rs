@@ -3,47 +3,28 @@
 //! Provides a lazily-initialized SQLite connection pool using sqlx.
 //! The database file lives in the application's data directory.
 
+use once_cell::sync::Lazy;
 use sqlx::SqlitePool;
 
-use crate::DatabaseError;
+static DB_POOL: Lazy<SqlitePool> = Lazy::new(init_pool);
 
-static mut DB_POOL: Option<SqlitePool> = None;
-
-/// Initialize the database connection pool.
-///
-/// Must be called once during application startup before any commands
-/// that access the database. Creates the database file and its parent
-/// directory if they don't exist.
-pub fn init_db() -> Result<(), DatabaseError> {
-    // Ensure parent directories exist
+fn init_pool() -> SqlitePool {
     let db_path = db_path();
     if let Some(parent) = db_path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| DatabaseError::Connection(format!("create data dir: {e}")))?;
+        std::fs::create_dir_all(parent).expect("failed to create data dir");
     }
 
     let url = format!("sqlite://{}", db_path.display());
     tracing::info!(db_path = %db_path.display(), "initializing SQLite connection pool");
 
-    let pool = SqlitePool::connect_lazy(&url).map_err(|e| DatabaseError::Connection(format!("lazy pool init: {e}")))?;
-    unsafe {
-        DB_POOL = Some(pool);
-    }
-
-    Ok(())
+    // `connect_lazy` defers the actual connection until first query — which
+    // will run inside a Tauri async command on the Tokio runtime.
+    SqlitePool::connect_lazy(&url).expect("failed to create SQLite pool")
 }
 
 /// Get the database connection pool.
-///
-/// # Panics
-/// Panics if the database has not been initialized (call `init_db` first).
 pub fn get_db() -> SqlitePool {
-    unsafe {
-        DB_POOL
-            .as_ref()
-            .expect("database not initialized; call init_db() first")
-            .clone()
-    }
+    DB_POOL.clone()
 }
 
 /// Return the path where the application database is stored.

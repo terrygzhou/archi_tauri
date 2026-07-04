@@ -64,12 +64,44 @@ export interface ConnectionInfo {
 
 type KeyHandler = (e: KeyboardEvent) => void;
 
-// ── mxGraph type declarations ───────────────────────────────────────────────
-// We declare minimal mxGraph types to avoid `any`.  The real mxgraph package
-// does not ship .d.ts files, so these ambient declarations cover what we use.
+// ── mxGraph runtime ──────────────────────────────────────────────────────────
+// mxgraph is loaded as a UMD global script in index.html.
+// window.mxgraph() returns the namespace with mxGraph, mxGraphModel, etc.
 
-declare class MxGraphModel {
-  constructor();
+const mx = (window as any).mxgraph({ shape: false });
+const MxGraphCtor = mx.mxGraph;
+const MxGraphModelCtor = mx.mxGraphModel;
+
+// ── Type interfaces ──────────────────────────────────────────────────────────
+// These are TypeScript-only (erased at runtime) — used for static typing.
+
+interface MxCell {
+  id: string;
+  value: string | null;
+  isVertex?: boolean;
+  isEdge?: boolean;
+  children?: MxCell[];
+  source?: MxCell;
+  target?: MxCell;
+  style?: string;
+}
+
+interface MxGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isRelative: boolean;
+}
+
+interface MxRectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface MxGraphModel {
   root: MxCell;
   createVertex(
     parent: MxCell,
@@ -94,45 +126,17 @@ declare class MxGraphModel {
   endUpdate(): void;
 }
 
-interface MxCell {
-  id: string;
-  value: string;
-  isVertex?: boolean;
-  isEdge?: boolean;
-  children?: MxCell[];
-  source?: MxCell;
-  target?: MxCell;
-}
-
-interface MxGeometry {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  isRelative: boolean;
-}
-
-interface MxRectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-declare class MxGraph {
-  constructor(model: MxGraphModel, container?: HTMLElement);
+interface MxGraph {
   container: HTMLElement;
   model: MxGraphModel;
   view: MxGraphView;
 
-  // Grid
   setGridSize(size: number): void;
   setGridEnabled(enabled: boolean): boolean;
   isGridEnabled(): boolean;
   gridEnabled: boolean;
   gridSize: number;
 
-  // Panning & zoom
   pan(dx: number, dy: number): void;
   panWheelZoom: boolean;
   setPanning(panning: boolean): void;
@@ -141,14 +145,12 @@ declare class MxGraph {
   zoomTo(scale: number): void;
   fit(): number;
 
-  // Selection
   selectionModel: MxSelectionModel;
   setSelectionCell(cell: MxCell | null): void;
   setSelectionCells(cells: MxCell[]): void;
   getSelectionCell(): MxCell | null;
   getSelectionCells(): MxCell[];
 
-  // Cell operations
   addCell(cell: MxCell, allowUpdate?: boolean): MxCell;
   removeCells(cells: MxCell[], checkParents?: boolean): MxCell[];
   moveCells(
@@ -161,7 +163,6 @@ declare class MxGraph {
   ): MxCell[];
   cloneCells(cells: MxCell[]): MxCell[];
 
-  // Styling
   getStylesheet(): MxStylesheet;
   getDefaultParent(): MxCell;
   insertVertex(
@@ -183,15 +184,12 @@ declare class MxGraph {
     style: string,
   ): MxCell;
 
-  // Events
   fireEvent(evt: Record<string, unknown>): void;
   listen(handler: (sender: unknown, evt: Record<string, unknown>) => void): () => void;
 
-  // Undoable edits
   isCellEditable(cell: MxCell): boolean;
   setCellEditable(cell: MxCell, editable: boolean): void;
 
-  // Export
   exportImage(
     bg: string,
     c: HTMLCanvasElement,
@@ -201,7 +199,6 @@ declare class MxGraph {
     ignoreScale?: boolean,
   ): void;
 
-  // Destroy
   destroy(): void;
 }
 
@@ -229,7 +226,7 @@ interface MxStylesheet {
   getStyle(key: string): Record<string, unknown>;
 }
 
-declare class MxPanningHandler {
+interface MxPanningHandler {
   graph: MxGraph;
   scrollWheelForPanning: boolean;
 }
@@ -285,25 +282,14 @@ export class ArchiGraph {
 
   // ── Initialization ────────────────────────────────────────────
 
-  private resolveMxGraphModel(): typeof MxGraphModel {
-    // Access mxGraphModel from the global mxgraph object
-    const globalObj = globalThis as unknown as Record<string, typeof MxGraphModel>;
-    return globalObj.mxGraphModel ??
-      ((globalThis as unknown as Record<string, unknown>).mxgraph as unknown as {
-        GraphModel: typeof MxGraphModel;
-      })?.GraphModel ??
-      (class {} as unknown as typeof MxGraphModel);
-  }
-
   private initializeGraph(): void {
     const container = document.getElementById(this.containerId);
     if (!container) {
       return;
     }
 
-    const Model = this.resolveMxGraphModel();
-    const model = new Model();
-    this.graph = new MxGraph(model, container);
+    const model = new MxGraphModelCtor();
+    this.graph = new MxGraphCtor(model, container);
 
     // Configure grid
     this.graph.setGridSize(this.gridSize);

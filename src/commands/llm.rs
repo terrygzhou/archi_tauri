@@ -61,7 +61,7 @@ pub async fn configure_provider(config: LlmProviderConfig) -> AppResult<()> {
 /// Use the LLM to map applications to ArchiMate capabilities.
 #[tauri::command]
 pub async fn map_to_capabilities(
-    provider: String,
+    _provider: String,
     api_key: String,
     model: String,
     applications: Vec<String>,
@@ -128,7 +128,7 @@ pub async fn map_to_capabilities(
 /// Generate a description for a model element using the LLM.
 #[tauri::command]
 pub async fn generate_description(
-    provider: String,
+    _provider: String,
     api_key: String,
     model: String,
     element_name: String,
