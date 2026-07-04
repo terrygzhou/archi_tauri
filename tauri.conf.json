@@ -5,8 +5,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeDevCommand": "cd web && npx vite",
+    "beforeBuildCommand": "cd web && npx vite build"
   },
   "bundle": {
     "active": true,

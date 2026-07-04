@@ -5,8 +5,8 @@
   "description": "Archi Desktop — Open-source ArchiMate modeling tool built with Tauri",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "cd web && npx vite",
+    "build": "cd web && npx vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "vitest run",
