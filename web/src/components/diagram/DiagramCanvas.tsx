@@ -111,9 +111,45 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({ className = '' }) 
 
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
+      } else if (e.button === 0) {
+        // Left-click: check if clicking on a diagram element to start drag
+        const target = e.target as HTMLElement;
+        const elementEl = target.closest('[data-element-id]');
+        if (elementEl && canvasRef.current) {
+          const elementId = elementEl.getAttribute('data-element-id');
+          if (elementId) {
+            const store = useDiagramStore.getState();
+            const el = store.activeDiagram?.elements.find((el) => el.id === elementId);
+            if (el) {
+              const rect = canvasRef.current!.getBoundingClientRect();
+              const canvasX = (e.clientX - rect.left - store.view.x) / store.view.zoom;
+              const canvasY = (e.clientY - rect.top - store.view.y) / store.view.zoom;
+              const offsetX = canvasX - el.x;
+              const offsetY = canvasY - el.y;
+              store.startDrag(elementId, offsetX, offsetY);
+            }
+          }
+        }
       }
     },
     [view, setView],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const store = useDiagramStore.getState();
+      if (!store.isDragging || !store.dragElementId || !canvasRef.current) return;
+
+      const rect = canvasRef.current.getBoundingClientRect();
+      const canvasX = (e.clientX - rect.left - store.view.x) / store.view.zoom;
+      const canvasY = (e.clientY - rect.top - store.view.y) / store.view.zoom;
+
+      const newX = canvasX - store.dragOffsetX;
+      const newY = canvasY - store.dragOffsetY;
+
+      store.moveElement(store.dragElementId, newX, newY);
+    },
+    [],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -255,6 +291,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({ className = '' }) 
         backgroundPosition: `${view.x % gridSize}px ${view.y % gridSize}px`,
       }}
       onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onContextMenu={handleContextMenu}
       onDoubleClick={handleDoubleClick}

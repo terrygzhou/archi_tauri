@@ -1,4 +1,5 @@
 import { ARCHI_FILE_EXTENSION, STORAGE_KEYS } from '../utils/constants';
+import { Model } from '../types/domain';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile, stat } from '@tauri-apps/plugin-fs';
 
@@ -133,6 +134,64 @@ export class FileService {
    */
   static isArchiFile(path: string): boolean {
     return this.getExtension(path) === 'archi';
+  }
+
+  /**
+   * Open an ArchiMate model file (dialog → JSON deserialization)
+   */
+  async openModel(options?: DialogOptions): Promise<Model | null> {
+    const result = await this.openFile({
+      ...options,
+      title: options?.title ?? 'Open ArchiMate Model',
+      filters: options?.filters ?? [
+        {
+          name: 'ArchiMate Models',
+          extensions: ['archi'],
+        },
+      ],
+    });
+
+    if (!result) return null;
+
+    try {
+      const model: Model = JSON.parse(result.content);
+      return model;
+    } catch (error) {
+      console.error('[FileService] Failed to parse model:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save an ArchiMate model to file (JSON serialization → dialog)
+   */
+  async saveModel(
+    model: Model,
+    options?: DialogOptions,
+  ): Promise<SaveFileResult | null> {
+    const content = JSON.stringify(model, null, 2);
+
+    return await this.saveFile(content, {
+      ...options,
+      title: options?.title ?? 'Save Model',
+      defaultPath: options?.defaultPath
+        ? FileService.ensureArchiExtension(options.defaultPath)
+        : undefined,
+      filters: options?.filters ?? [
+        {
+          name: 'ArchiMate Models',
+          extensions: ['archi'],
+        },
+      ],
+    });
+  }
+
+  /**
+   * Save model to a known path (no dialog)
+   */
+  async saveModelToPath(path: string, model: Model): Promise<void> {
+    const content = JSON.stringify(model, null, 2);
+    await this.saveToPath(path, content);
   }
 
   /**
